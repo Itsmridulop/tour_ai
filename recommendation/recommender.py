@@ -23,17 +23,20 @@ class TourRecommender:
         self.tfidf_matrix = self.tfidf.fit_transform(self.df['content'])
         self.cosine_sim = cosine_similarity(self.tfidf_matrix, self.tfidf_matrix)
 
-    def convert_object_ids(self,obj):
+    def _convert_object_ids(self,obj):
         if isinstance(obj, dict):
-            return {k: self.convert_object_ids(v) for k, v in obj.items()}
+            return {k: self._convert_object_ids(v) for k, v in obj.items()}
         elif isinstance(obj, list):
-            return [self.convert_object_ids(item) for item in obj]
+            return [self._convert_object_ids(item) for item in obj]
         elif isinstance(obj, ObjectId):
             return str(obj)
         else:
             return obj
 
     def recommend(self, tour_name: str):
+        if tour_name == 'all':
+            results = self.df.to_dict(orient='records')
+            return [self._convert_object_ids(doc) for doc in results]
         if tour_name not in self.df['name'].values:
             return []
         idx = self.df[self.df['name'] == tour_name].index[0]
@@ -41,4 +44,4 @@ class TourRecommender:
         sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
         tour_indices = [i[0] for i in sim_scores]
         results = self.df.iloc[tour_indices].to_dict(orient='records')
-        return [self.convert_object_ids(doc) for doc in results]
+        return [self._convert_object_ids(doc) for doc in results]
